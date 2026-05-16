@@ -1,0 +1,5 @@
+{
+	"outputFile": "brev.txt",
+	"feedsDirectory": "feeds",
+	"feedsFileEnding": ".brev"
+}
