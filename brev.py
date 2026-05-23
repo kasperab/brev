@@ -1,21 +1,30 @@
 import json
 import os
 
-def run(config):
-	if not os.path.isfile(config):
-		print("Config file not found")
-		return
-	output_file = None
-	feeds_directory = None
-	feeds_ending = None
-	with open(config, "r") as file:
+def get_config(config_path):
+	if not os.path.isfile(config_path):
+		print("CONFIG FILE NOT FOUND")
+		return None
+	with open(config_path, "r") as file:
 		data = json.load(file)
-		if "outputFile" not in data or "feedsDirectory" not in data or "feedsFileEnding" not in data:
-			print("Config file missing parameters")
-			return
-		output_file = data["outputFile"]
-		feeds_directory = data["feedsDirectory"]
-		feeds_ending = data["feedsFileEnding"]
+		complete = True
+		if "output_file" not in data:
+			print("CONFIG FILE MISSING 'output_file'")
+			complete = False
+		if "feeds_directory" not in data:
+			print("CONFIG FILE MISSING 'feeds_directory'")
+			complete = False
+		if "feeds_file_ending" not in data:
+			print("CONFIG FILE MISSING 'feeds_file_ending'")
+			complete = False
+		if complete:
+			return data
+		return None
+
+def run(config_path):
+	config = get_config(config_path)
+	if config is None:
+		return
 
 if __name__ == "__main__":
 	run("config.json")

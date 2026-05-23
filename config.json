@@ -1,5 +1,5 @@
 {
-	"outputFile": "brev.txt",
-	"feedsDirectory": "feeds",
-	"feedsFileEnding": ".brev"
+	"output_file": "brev.txt",
+	"feeds_directory": "feeds",
+	"feeds_file_ending": ".brev"
 }
