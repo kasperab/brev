@@ -1,5 +1,6 @@
 import json
 import os
+import urllib.request
 
 def get_config(config_path):
 	if not os.path.isfile(config_path):
@@ -41,6 +42,20 @@ def get_feed(path):
 		except:
 			return None
 
+def fetch_raw_feed(url):
+	try:
+		with urllib.request.urlopen(url) as response:
+			if response.status == 200:
+				return response.read().decode(response.headers.get_content_charset())
+			else:
+				return None
+	except:
+		return None
+
+def error_log(error):
+	print(error)
+	return error + "\n"
+
 def run(config_path):
 	config = get_config(config_path)
 	if config is None:
@@ -51,16 +66,17 @@ def run(config_path):
 		feed_name = path[len(config["feeds_directory"]) + 1:-len(config["feeds_file_ending"])]
 		feed = get_feed(path)
 		if feed is None:
-			error = f"ERROR LOADING FILE FOR FEED '{feed_name}'"
-			print(error)
-			out += error + "\n"
+			out += error_log(f"FAILED TO LOAD FEED FILE '{path}'")
 			continue
+		raw_feed = fetch_raw_feed(feed["url"])
+		if raw_feed is None:
+			out += error_log(f"FAILED TO FETCH FEED '{feed_name}' FROM '{feed['url']}'")
+			continue
+	mode = "w"
 	if os.path.isfile(config["output_file"]):
-		with open(config["output_file"], "a") as file:
-			file.write(out)
-	else:
-		with open(config["output_file"], "w") as file:
-			file.write(out)
+		mode = "a"
+	with open(config["output_file"], mode) as file:
+		file.write(out)
 
 if __name__ == "__main__":
 	run("config.json")
