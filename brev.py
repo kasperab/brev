@@ -46,7 +46,10 @@ def fetch_raw_feed(url):
 	try:
 		with urllib.request.urlopen(url) as response:
 			if response.status == 200:
-				return response.read().decode(response.headers.get_content_charset())
+				encoding = response.headers.get_content_charset()
+				if encoding is None:
+					encoding = "utf-8"
+				return response.read().decode(encoding)
 			else:
 				return None
 	except:
