@@ -1,5 +1,6 @@
 {
 	"output_file": "brev.txt",
+	"output_format": "{feed_name}: {entry}",
 	"feeds_directory": "feeds",
 	"feeds_file_ending": ".brev"
 }
