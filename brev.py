@@ -2,9 +2,10 @@ import importlib
 import json
 import os
 import re
+import sys
 import urllib.request
 
-def get_config(config_path):
+def load_config(config_path):
 	if not os.path.isfile(config_path):
 		print("CONFIG FILE NOT FOUND")
 		return None
@@ -35,7 +36,7 @@ def get_feed_paths(top_directory, file_ending):
 				paths.append(os.path.join(directory, file))
 	return paths
 
-def get_feed(path):
+def load_feed(path):
 	with open(path, "r") as file:
 		try:
 			lines = file.read().splitlines()
@@ -63,7 +64,7 @@ def fetch_raw_feed(url):
 def import_parsers():
 	parsers = {}
 	for file in os.listdir():
-		if file.endswith(".py"):
+		if file.endswith(".py") and file != sys.argv[0]:
 			name = file[:-len(".py")]
 			parsers[name] = importlib.import_module(name)
 	return parsers
@@ -92,7 +93,7 @@ def error_log(error):
 	return error + "\n"
 
 def run(config_path):
-	config = get_config(config_path)
+	config = load_config(config_path)
 	if config is None:
 		return
 	out = ""
@@ -100,7 +101,7 @@ def run(config_path):
 	parsers = import_parsers()
 	for path in feed_paths:
 		feed_name = path[len(config["feeds_directory"]) + 1:-len(config["feeds_file_ending"])]
-		success, feed = get_feed(path)
+		success, feed = load_feed(path)
 		if not success:
 			out += error_log(f"FAILED TO LOAD FEED FILE '{path}' ({feed})")
 			continue
@@ -124,5 +125,28 @@ def run(config_path):
 	with open(config["output_file"], mode) as file:
 		file.write(out)
 
+def update_feed(path):
+	success, feed = load_feed(path)
+	if not success:
+		print(feed)
+		return
+	success, raw_feed = fetch_raw_feed(feed["url"])
+	if not success:
+		print(raw_feed)
+		return
+	parsers = import_parsers()
+	if feed["parser"] in parsers:
+		try:
+			entries = parsers[feed["parser"]].parse(raw_feed)
+		except Exception as e:
+			print(e)
+			return
+	else:
+		entries = regex_parse(raw_feed, feed["parser"])
+	save_feed(path, feed["url"], feed["parser"], entries)
+
 if __name__ == "__main__":
-	run("config.json")
+	if len(sys.argv) > 1:
+		update_feed(sys.argv[1])
+	else:
+		run("config.json")
