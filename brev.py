@@ -50,7 +50,9 @@ def load_feed(path):
 
 def fetch_raw_feed(url):
 	try:
-		with urllib.request.urlopen(url) as response:
+		request = urllib.request.Request(url)
+		request.add_header("User-Agent", "brev")
+		with urllib.request.urlopen(request) as response:
 			if response.status == 200:
 				encoding = response.headers.get_content_charset()
 				if encoding is None:
