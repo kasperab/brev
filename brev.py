@@ -43,9 +43,9 @@ def get_feed(path):
 			feed["url"] = lines[0]
 			feed["parser"] = lines[1]
 			feed["entries"] = lines[2:]
-			return feed
-		except:
-			return None
+			return True, feed
+		except Exception as e:
+			return False, e
 
 def fetch_raw_feed(url):
 	try:
@@ -54,11 +54,11 @@ def fetch_raw_feed(url):
 				encoding = response.headers.get_content_charset()
 				if encoding is None:
 					encoding = "utf-8"
-				return response.read().decode(encoding)
+				return True, response.read().decode(encoding)
 			else:
-				return None
-	except:
-		return None
+				return False, response.status
+	except Exception as e:
+		return False, e
 
 def import_parsers():
 	parsers = {}
@@ -100,19 +100,19 @@ def run(config_path):
 	parsers = import_parsers()
 	for path in feed_paths:
 		feed_name = path[len(config["feeds_directory"]) + 1:-len(config["feeds_file_ending"])]
-		feed = get_feed(path)
-		if feed is None:
-			out += error_log(f"FAILED TO LOAD FEED FILE '{path}'")
+		success, feed = get_feed(path)
+		if not success:
+			out += error_log(f"FAILED TO LOAD FEED FILE '{path}' ({feed})")
 			continue
-		raw_feed = fetch_raw_feed(feed["url"])
-		if raw_feed is None:
-			out += error_log(f"FAILED TO FETCH FEED '{feed_name}' FROM '{feed['url']}'")
+		success, raw_feed = fetch_raw_feed(feed["url"])
+		if not success:
+			out += error_log(f"FAILED TO FETCH FEED '{feed_name}' FROM '{feed['url']}' ({raw_feed})")
 			continue
 		if feed["parser"] in parsers:
 			try:
 				entries = parsers[feed["parser"]].parse(raw_feed)
-			except:
-				out += error_log(f"FAILED TO PARSE FEED '{feed_name}' WITH PARSER '{feed['parser']}'")
+			except Exception as e:
+				out += error_log(f"FAILED TO PARSE FEED '{feed_name}' WITH PARSER '{feed['parser']}' ({e})")
 				continue
 		else:
 			entries = regex_parse(raw_feed, feed["parser"])
