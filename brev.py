@@ -5,6 +5,9 @@ import re
 import sys
 import urllib.request
 
+# Takes path to config file
+# Returns dictionary representing config if successful
+# Returns None if not successful
 def load_config(config_path):
 	if not os.path.isfile(config_path):
 		print("CONFIG FILE NOT FOUND")
@@ -28,6 +31,8 @@ def load_config(config_path):
 			return data
 		return None
 
+# Takes directory to look for feeds in and file ending for feeds
+# Returns list containing paths to all found feeds
 def get_feed_paths(top_directory, file_ending):
 	paths = []
 	for directory, _, files in os.walk(top_directory):
@@ -36,6 +41,9 @@ def get_feed_paths(top_directory, file_ending):
 				paths.append(os.path.join(directory, file))
 	return paths
 
+# Takes path to feed file
+# Returns True and dictionary representing feed if successful
+# Returns False and error message if not successful
 def load_feed(path):
 	with open(path, "r") as file:
 		try:
@@ -48,6 +56,9 @@ def load_feed(path):
 		except Exception as e:
 			return False, e
 
+# Takes URL
+# Returns True and content at URL if successful
+# Returns False and error message if not successful
 def fetch_raw_feed(url):
 	try:
 		request = urllib.request.Request(url)
@@ -63,6 +74,7 @@ def fetch_raw_feed(url):
 	except Exception as e:
 		return False, e
 
+# Returns dictionary containing imported modules from same directory as this file
 def import_parsers():
 	parsers = {}
 	for file in os.listdir():
@@ -71,6 +83,8 @@ def import_parsers():
 			parsers[name] = importlib.import_module(name)
 	return parsers
 
+# Takes raw feed string and regex pattern string
+# Returns list containing all lines in raw feed that match regex pattern
 def regex_parse(raw_feed, pattern_string):
 	entries = []
 	pattern = re.compile(pattern_string)
@@ -79,6 +93,8 @@ def regex_parse(raw_feed, pattern_string):
 			entries.append(line.strip())
 	return entries
 
+# Takes list containing current entries, list containing old entries, feed name, and output format
+# Returns string containing every new entry in specified format on separate lines
 def get_new_entries(entries, old_entries, feed_name, output_format):
 	out = ""
 	for entry in entries:
@@ -86,14 +102,21 @@ def get_new_entries(entries, old_entries, feed_name, output_format):
 			out += output_format.format(feed_name = feed_name, entry = entry) + "\n"
 	return out
 
+# Takes feed path, URL, parser name, and list of entries
+# Saves URL, parser name, and entries to file at specified path
 def save_feed(path, url, parser, entries):
 	with open(path, "w") as file:
 		file.write("{url}\n{parser}\n{entries}\n".format(url = url, parser = parser, entries = "\n".join(entries)))
 
+# Takes error
+# Prints error
+# Returns error with newline character appended
 def error_log(error):
 	print(error)
 	return error + "\n"
 
+# Takes path to config file
+# Tries to load config file, update all feeds, and output new entries to file specified in config
 def run(config_path):
 	config = load_config(config_path)
 	if config is None:
@@ -121,12 +144,11 @@ def run(config_path):
 			entries = regex_parse(raw_feed, feed["parser"])
 		out += get_new_entries(entries, feed["entries"], feed_name, config["output_format"])
 		save_feed(path, feed["url"], feed["parser"], entries)
-	mode = "w"
-	if os.path.isfile(config["output_file"]):
-		mode = "a"
-	with open(config["output_file"], mode) as file:
+	with open(config["output_file"], "a") as file:
 		file.write(out)
 
+# Takes path to feed file
+# Tries to update specified feed
 def update_feed(path):
 	success, feed = load_feed(path)
 	if not success:
